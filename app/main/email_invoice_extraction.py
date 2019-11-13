@@ -190,12 +190,28 @@ def get_cost(text):
     return expense, currency 
 
 
-def extract_from_email_bodytext(inputfile):
+# def extract_from_email_bodytext(inputfile):
+#     """
+#         from a text inputfile which contains body text of the email, extract the information
+#     """    
+#     result = {}
+#     text = get_text(inputfile)
+#     text = truncate(text)
+    
+#     result.update({'create_date': extract_date(get_field(text, 'Date'))})
+#     result.update({'seller': get_field(text, 'From')})
+#     expense_and_currency = get_cost(text)
+#     result.update({'total': expense_and_currency[0]})
+#     result.update({'currency': expense_and_currency[1]})
+    
+#     return result
+
+
+def extract_from_email_bodytext(text):
     """
         from a text inputfile which contains body text of the email, extract the information
     """    
     result = {}
-    text = get_text(inputfile)
     text = truncate(text)
     
     result.update({'create_date': extract_date(get_field(text, 'Date'))})
