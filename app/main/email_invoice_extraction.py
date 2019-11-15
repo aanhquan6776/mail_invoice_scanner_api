@@ -16,12 +16,14 @@ def cut_top(text):
         the text before the seller information is not necessary
     """
     begin = 0
-    beginregex = "From"
+    begin_keyword = "From"
+    check_regex = r"From.+[@].+Date"
+    
     tmp = 0
     while True:
         # Find the last "From" to get the exact location of seller information
-        from_found = re.search(beginregex, text[tmp:])
-        if from_found:
+        from_found = re.search(begin_keyword, text[tmp:])
+        if from_found and re.match(check_regex, text[tmp+from_found.start():]):
             begin = tmp + from_found.start()
             tmp = tmp + from_found.end()
         else:
@@ -77,15 +79,12 @@ def extract_date(datestring):
     return day + '/' + month + '/' + year
 
 
-def get_field(text, key_field):
+def get_date(text):
     """
-        Get from text the information of the key_field with the other fields to help truncate the result
+        Get date from the text
     """
-    FIELDS = {'From':'Seller', 'Subject':'', 'Date':'CreateDate', 'To':''}
-    
-    # result = ""
-    if key_field not in FIELDS.keys():
-        return ""
+    FIELDS = ['From', 'Subject', 'Date', 'To']
+    key_field = "Date"
     
     begin = 0
     end = len(text)
@@ -97,14 +96,14 @@ def get_field(text, key_field):
         if text[begin]==':':
             begin += 1
             
-        for field in FIELDS.keys():
+        for field in FIELDS:
             # search for the other fields (end point of result)
             endfound = re.search(field, text[begin:end], re.IGNORECASE)
             if endfound:
                 # update the endpoint (the closest field to the key_field)
                 end = min(end, begin + endfound.start())
     
-    return text[begin:end].strip()
+    return extract_date(text[begin:end].strip())
 
 
 def string_to_float(numstring):
@@ -125,6 +124,84 @@ def string_to_float(numstring):
             result = result*10 + int(numstring[i])
             
     return result + tmp
+
+
+def longest_common_substring(str1, str2):
+    from difflib import SequenceMatcher
+    str1 = str1.upper()
+    str2 = str2.upper()
+    seqMatch = SequenceMatcher(None, str1, str2)
+    match = seqMatch.find_longest_match(0, len(str1), 0, len(str2))
+    return str1[match.a: match.a + match.size]
+
+
+def get_seller(text):
+    """
+        Get seller information from the text
+    """
+    result = ""
+    
+    FIELDS = ['From', 'Subject', 'Date', 'To']
+    key_field = "From"
+    
+    email_regex = r"<.+>"
+    begin = 0
+    end = len(text)
+    
+    found = re.search(key_field, text[begin:end], re.IGNORECASE)
+    if found:
+        # search for the key_field (begin point of result)
+        begin = begin + found.end()
+        if text[begin]==':':
+            begin += 1
+            
+        for field in FIELDS:
+            # search for the other fields (end point of result)
+            endfound = re.search(field, text[begin:end], re.IGNORECASE)
+            if endfound:
+                # update the endpoint (the closest field to the key_field)
+                end = min(end, begin + endfound.start())
+    
+    result = text[begin:end].strip()
+    
+    email_found = re.search(email_regex, result)
+    if email_found:
+        email = result[email_found.start() : email_found.end()]
+        email = email[1:-1]
+        name = result[:email_found.start()].strip()
+        
+        if len(name)==0:
+            name = longest_common_substring(email, get_subject(text))
+        return name, email
+    
+    return result, ""
+
+
+def get_subject(text):
+    """
+        Get the subject of the email
+    """
+    FIELDS = ['From', 'Subject', 'Date', 'To']
+    key_field = "Subject"
+    
+    begin = 0
+    end = len(text)
+    
+    found = re.search(key_field, text[begin:end], re.IGNORECASE)
+    if found:
+        # search for the key_field (begin point of result)
+        begin = begin + found.end()
+        if text[begin]==':':
+            begin += 1
+            
+        for field in FIELDS:
+            # search for the other fields (end point of result)
+            endfound = re.search(field, text[begin:end], re.IGNORECASE)
+            if endfound:
+                # update the endpoint (the closest field to the key_field)
+                end = min(end, begin + endfound.start())
+    
+    return text[begin:end].strip()
 
 
 def get_currency(string):
@@ -190,12 +267,28 @@ def get_cost(text):
     return expense, currency 
 
 
-# def extract_from_email_bodytext(inputfile):
+def extract_from_email_bodytext(inputfile):
+    """
+        from a text inputfile which contains body text of the email, extract the information
+    """    
+    result = {}
+    text = get_text(inputfile)
+    text = truncate(text)
+    
+    result.update({'create_date': get_date(text)})
+    result.update({'seller': get_seller(text)})
+    expense_and_currency = get_cost(text)
+    result.update({'total': expense_and_currency[0]})
+    result.update({'currency': expense_and_currency[1]})
+    
+    return result
+
+
+# def extract_from_email_bodytext(text):
 #     """
 #         from a text inputfile which contains body text of the email, extract the information
 #     """    
 #     result = {}
-#     text = get_text(inputfile)
 #     text = truncate(text)
     
 #     result.update({'create_date': extract_date(get_field(text, 'Date'))})
@@ -205,19 +298,3 @@ def get_cost(text):
 #     result.update({'currency': expense_and_currency[1]})
     
 #     return result
-
-
-def extract_from_email_bodytext(text):
-    """
-        from a text inputfile which contains body text of the email, extract the information
-    """    
-    result = {}
-    text = truncate(text)
-    
-    result.update({'create_date': extract_date(get_field(text, 'Date'))})
-    result.update({'seller': get_field(text, 'From')})
-    expense_and_currency = get_cost(text)
-    result.update({'total': expense_and_currency[0]})
-    result.update({'currency': expense_and_currency[1]})
-    
-    return result
