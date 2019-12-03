@@ -1,0 +1,24 @@
+transfer currency and amount
+total
+total
+amount paid
+amount paid
+amount
+order total
+charged
+
+
+tổng cộng
+tổng cộng
+tổng thanh toán
+tổng thanh toán
+thanh toán (tổng cộng)
+thanh toán
+tổng giá trị đơn hàng
+tổng giá
+số tiền
+
+
+
+
+
