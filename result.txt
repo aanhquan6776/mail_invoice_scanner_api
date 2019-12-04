@@ -11,7 +11,7 @@
 {'created_by': '', 'date': '27/06/2019', 'seller': 'CellphoneS', 'total': 4300000, 'currency': ''}
 
 {'created_by': '', 'date': '10/03/2019', 'seller': 'Vietjet Reservations', 'total': 6, 'currency': ''} w
-{'created_by': '', 'date': '10/03/2019', 'seller': 'Vietjet Reservations', 'total': 1623800, 'currency': ''}
+{'created_by': '', 'date': '10/03/2019', 'seller': 'Vietjet Reservations', 'total': 1623800, 'currency': 'VND'}
 
 {'created_by': '', 'date': '16/07/2019', 'seller': 'Klook.com', 'total': 141536, 'currency': 'VND'}
 {'created_by': '', 'date': '16/07/2019', 'seller': 'Klook', 'total': 141536, 'currency': 'VND'}
@@ -20,7 +20,7 @@
 {'created_by': '', 'date': '15/08/2018', 'seller': 'Apple', 'total': 45000, 'currency': 'VND'}
 
 {'created_by': '', 'date': '13/09/2019', 'seller': 'Tiki', 'total': 12, 'currency': ''} w
-{'created_by': '', 'date': '13/09/2019', 'seller': 'Tiki', 'total': 351996, 'currency': ''}
+{'created_by': '', 'date': '13/09/2019', 'seller': 'Tiki', 'total': 351996, 'currency': 'VND'}
 
 {'created_by': '', 'date': '27/09/2018', 'seller': 'Grab', 'total': 27000, 'currency': 'VND'}
 {'created_by': '', 'date': '27/09/2018', 'seller': 'Grab', 'total': 27000, 'currency': 'VND'}
@@ -29,19 +29,19 @@
 {'created_by': '', 'date': '10/05/2018', 'seller': 'ngrok', 'total': 60.0, 'currency': 'Dollar'}
 
 {'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 0, 'currency': ''} w
-{'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 30000, 'currency': ''}
+{'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 30000, 'currency': 'VND'}
 
 {'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 0, 'currency': ''} w
-{'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 30000, 'currency': ''}
+{'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 30000, 'currency': 'VND'}
 
 {'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 0, 'crrency': ''} w
-{'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 30000, 'crrency': ''}
+{'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 30000, 'crrency': 'VND'}
 
 {'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 0, 'currency': ''} w
-{'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 30000, 'currency': ''}
+{'created_by': '', 'date': '31/05/2019', 'seller': 'MoMo', 'total': 30000, 'currency': 'VND'}
 
 {'created_by': '', 'date': '01/06/2019', 'seller': 'MoMo', 'total': 0, 'currency': ''} w
-{'created_by': '', 'date': '01/06/2019', 'seller': 'MoMo', 'total': 100000, 'currency': ''}
+{'created_by': '', 'date': '01/06/2019', 'seller': 'MoMo', 'total': 100000, 'currency': 'VND'}
 
 {'created_by': '', 'date': '11/08/2019', 'seller': 'MoMo', 'total': 25000, 'currency': 'VND'}
 {'created_by': '', 'date': '11/08/2019', 'seller': 'MoMo', 'total': 25000, 'currency': 'VND'}

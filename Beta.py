@@ -1,6 +1,7 @@
 import re
 
 
+####################### ####################
 def get_text(filepath):
     """
         get the text from input file
@@ -42,7 +43,30 @@ def truncate(text):
     result = cut_top(result)
     return result
 
+###################### GET CREATOR ##################
+def get_creator(text):
+    KEY_FIELDS = ['created_by:', 'created by:']
+    email_regexes = [r"[a-z][a-z0-9_\.]{5,32}@[a-z0-9]{2,}(\.[a-z0-9]{2,4}){1,2}", \
+                   r" ,"]
+    
+    
+    begin = 0
+    end = len(text)
+    
+    for key_field in KEY_FIELDS:        
+        found = re.search(key_field, text[begin:end], re.IGNORECASE)
+        if found:
+            # search for the key_field (begin point of result)
+            begin = begin + found.end()
+            for regex in email_regexes:
+                creator_found = re.search(regex, text[begin:])
+                if creator_found:
+                    return text[begin+creator_found.start() : begin+creator_found.end()].strip()
+        
+    return ""
 
+
+###################### GET DATE #####################
 def preprocess_and_split_datestring(datestring):
     result = []
     datestring = datestring.replace(",", "")
@@ -96,7 +120,8 @@ def extract_vie_date(datestring):
         get the day, month, year in the english datestring
     """
     substring_found = re.search(r",.+,.+", datestring)
-    datestring = substring_found.group()
+    if substring_found:
+        datestring = substring_found.group()
     tokens = preprocess_and_split_datestring(datestring)
     
     year = ''
@@ -159,16 +184,38 @@ def get_date(text):
     return extract_date(text[begin:end].strip())
 
 
-def longest_common_substring(str1, str2):
-    from difflib import SequenceMatcher
-    str1 = str1.upper()
-    str2 = str2.upper()
-    seqMatch = SequenceMatcher(None, str1, str2)
-    match = seqMatch.find_longest_match(0, len(str1), 0, len(str2))
-    return str1[match.a: match.a + match.size]
+###################### GET VENDOR #######################
+def count(text, word):
+    if len(word)==0:
+        return 0
+    return len(re.findall(word, text, re.IGNORECASE))
 
 
-def get_seller(text):
+def preprocess_and_split_email(rear_part):
+    result = []
+    result = rear_part.split(".")
+    return result
+
+
+def get_vendor_via_email(text, email):
+    if "@" not in email:
+        return ""
+    rear_part = email[re.search("@", email).end():]
+    result = ""
+    max_count = 0
+    strings = preprocess_and_split_email(rear_part)
+    
+    for i in range(len(strings)-1):
+        string = strings[i]
+        tmp = count(text, string)
+        if max_count<tmp:
+            max_count=tmp
+            result = string
+            
+    return result
+
+
+def get_vendor(text):
     """
         Get seller information from the text
     """
@@ -203,11 +250,12 @@ def get_seller(text):
         email = email[1:-1]    # get rid of the pair of brackets surrounding the email string
         name = result[:email_found.start()].strip()
         
-        if len(name)==0:
-            name = longest_common_substring(email, get_subject(text))
-        return name
+        if len(name)>0:
+            return name
+        else:
+            return get_vendor_via_email(text, email)
     
-    return result
+    return ""
 
 
 def get_subject(text):
@@ -237,18 +285,20 @@ def get_subject(text):
     return text[begin:end].strip()
 
 
+##################### GET COST #######################
 def string_to_float(numstring):
     """
         convert a string with splitter ','' and '.' to float
     """
+#     print(numstring)
     result = 0
     tmp = 0
     begin = 0
     end = len(numstring)
-    
-    if not re.match(r"\d{1}", numstring[-3]):
-        tmp = tmp + int(numstring[-2])/10 + int(numstring[-1])/100
-        end = end - 3
+    if len(numstring)>2:
+        if not re.match(r"\d{1}", numstring[-3]):
+            tmp = tmp + int(numstring[-2])/10 + int(numstring[-1])/100
+            end = end - 3
         
     for i in range(begin, end):
         if re.match(r"\d{1}", numstring[i]):
@@ -256,96 +306,93 @@ def string_to_float(numstring):
             
     return result + tmp
 
-
-def get_currency(string):
-    CURRENCIES = {'[$]':'Dollar', 'USD':'Dollar', 'VND':'VND', '₫':'VND', 'đ':'VND'}
+def get_currency(text, cost_begin, cost_end, currency_radius=5):
+    CURRENCIES = {'[$]':'Dollar', 'USD':'Dollar', 'VND|vnd':'VND', '₫':'VND', 'đ':'VND'}
     for currency in CURRENCIES.keys():
-        if re.search(currency, string, re.IGNORECASE):
+        if re.search(currency, text[max(cost_begin-currency_radius, 0): \
+                                    min(cost_end+currency_radius, len(text))]):
             return CURRENCIES[currency]
     return ""
 
-
-def get_cost(text):
-    """
-        get the total cost in the text
-    """
-    KEYWORDS = ['total', 'amount paid', 'amount', 'charged', 'total payment', 'you paid', 'tổng', \
-                'tổng cộng', 'số tiền', 'thanh toán', 'tong', 'tong cong', 'so tien', 'thanh toan']   
-    VI_COST_REGEXES = [r'\d{1,3}([.]\d{3})+([,]\d{2})?', r'\d+([,]\d{2})?']
-    EN_COST_REGEXES = [r'\d{1,3}([,]\d{3})+([.]\d{2})?', r'\d+([.]\d{2})?']
+def choose_between_cost_founds(cost_tuple1, cost_tuple2):
+    if not cost_tuple1:
+        return cost_tuple2
+    if not cost_tuple2:
+        return cost_tuple1
     
-    expense = 0
-    currency = ""
+    position1 = cost_tuple1[1]
+    position2 = cost_tuple2[1]
+    currency1 = cost_tuple1[2]
+    currency2 = cost_tuple2[2]
     
-    begin = 0
-    end = len(text)
-    
-    tmp = 0
-    for keyword in KEYWORDS: 
-        # search for keyword, which is followed by the total cost
-        while True:
-            keyword_found = re.search(keyword, text[tmp:], re.IGNORECASE)
-            if keyword_found:
-#                 print(keyword_found)
-                tmp = tmp + keyword_found.end()
-            else:
-                break
-    
-    begin = tmp
-    if begin > 0:
-        # if the keyword exists
-        l = end+1
-        r = end
-        for vi_cost_regex in VI_COST_REGEXES:
-            # search for the cost right after the keyword
-            found = re.search(vi_cost_regex, text[begin:], re.IGNORECASE)
-            if found:
-                if l>found.start() or \
-                        (l==found.start() and r-l+1<found.end()-found.start()+1):   
-                    l = found.start()
-                    r = found.end()
-                    
-        for en_cost_regex in EN_COST_REGEXES:
-            # search for the cost right after the keyword
-            found = re.search(en_cost_regex, text[begin:], re.IGNORECASE)
-            if found:
-                if l>found.start() or \
-                        (l==found.start() and r-l+1<found.end()-found.start()+1):
-                    l = found.start()
-                    r = found.end()
-        if l<=end:
-            expense = string_to_float(text[begin+l : begin+r])
-            currency = get_currency(text[max(begin+l-10, begin): min(begin+r+10, end)])
+    if not (len(currency1)*len(currency2)==0):
+        if position1>position2:
+            return cost_tuple1
         else:
-            pass
+            return cost_tuple2
     else:
-        pass
-    
-    return expense, currency 
-
-
-def get_creator(text):
-    KEY_FIELDS = ['created_by', 'Created by', 'created by']
-    email_regexes = [r"[a-z][a-z0-9_\.]{5,32}@[a-z0-9]{2,}(\.[a-z0-9]{2,4}){1,2}", \
-                   r"[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*"]
-    
-    
-    begin = 0
-    end = len(text)
-    
-    for key_field in KEY_FIELDS:        
-        found = re.search(key_field, text[begin:end], re.IGNORECASE)
-        if found:
-            # search for the key_field (begin point of result)
-            begin = begin + found.end()
-            for regex in email_regexes:
-                creator_found = re.search(regex, text[begin:])
-                if creator_found:
-                    return text[begin+creator_found.start() : begin+creator_found.end()].strip()
+        if len(currency1)>0:
+            return cost_tuple1
+        else:
+            return cost_tuple2
         
-    return ""
+        
+def get_cost_by_cost_regex_and_keyword(text, cost_regex, keyword):
+    keyword_found = list(re.finditer(keyword, text, re.IGNORECASE))
+    left = 0
+    result = None
+    for i in range(len(keyword_found)):
+        match = keyword_found[i]
+        if i==0:
+            left = match.end()
+        else:
+            right = match.start()
+            cost_found = re.search(cost_regex, text[left:right])
+            if cost_found:
+                currency = get_currency(text, left + cost_found.start(), left + cost_found.end())
+                tmp = (cost_found.group(), left + cost_found.start(), currency)
+                result = choose_between_cost_founds(result, tmp)
+            left = match.end()
+    if len(keyword_found)>0:
+        cost_found = re.search(cost_regex, text[left:-1])
+        if cost_found:
+            currency = get_currency(text, left + cost_found.start(), left + cost_found.end())
+            tmp = (cost_found.group(), left + cost_found.start(), currency)
+            result = choose_between_cost_founds(result, tmp)
+    return result
 
+def get_cost_by_cost_regex(text, cost_regex):
+    KEYWORDS = ['amount paid', 'amount', 'charged', 'total payment', 'total', 'you paid', \
+                'thanh toán', 'tổng cộng', 'tổng', 'số tiền', 'thanh toan', 'tong cong', 'tong', 'so tien']
+    
+    result = None
+    for keyword in KEYWORDS:
+        tmp = get_cost_by_cost_regex_and_keyword(text, cost_regex, keyword)
+        result = choose_between_cost_founds(result, tmp)
+#         if tmp and ((not result) or (result and result[1]<tmp[1])):
+#             result = tmp
+            
+    return result
+                
+                
+def get_cost(text):
+    COST_REGEXES = [r'(?<!([,\d]))(\d{1,3})([,]\d{3})+([.]\d{2})?(?!\d)', \
+                    r'(?<!([.\d]))(\d{1,3})([.]\d{3})+([,]\d{2})?(?!\d)', \
+                    r'\d+([.,]\d{2})?(?!\d)']
+#                     r'(?<![,\d])\d+([,]\d{2})?(?!\d)', \
+#                     r'(?<![.\d])\d+([.]\d{2})?(?!\d)']    
+    
+    for cost_regex in COST_REGEXES:
+        cost_found = get_cost_by_cost_regex(text, cost_regex)
+        if cost_found:
+            expense = string_to_float(cost_found[0])
+            currency = get_currency(text, cost_found[1], cost_found[1] + len(cost_found[0]))
+            return expense, currency
+        
+     
+    return (0, "")
 
+############# MAIN FUNCTION ###############
 def extract_from_email_bodytext(text):
     """
         from body text of the email, extract the information
@@ -355,7 +402,7 @@ def extract_from_email_bodytext(text):
     text = truncate(text)
     
     result.update({'date': get_date(text)})
-    result.update({'seller': get_seller(text)})
+    result.update({'seller': get_vendor(text)})
     expense_and_currency = get_cost(text)
     result.update({'total': expense_and_currency[0]})
     result.update({'currency': expense_and_currency[1]})
