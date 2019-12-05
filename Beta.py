@@ -19,13 +19,15 @@ def cut_top(text):
     """
     begin = 0
     begin_keyword = "From:|Từ:"
-    check_regex = r"(From:|Từ:).+[@].+(Date:|Ngày:)"
+#     check_regex = r"(From:|Từ:).+[@].+(Date:|Ngày:)"
+#     check_regex = r"(From:|Từ:).*(Date:|Ngày:).*(To:)"
+    check_regex = r"(From:|Từ:)[\S\s]+(Date:|Ngày:)[\S\s]+(To:)"
     
     tmp = 0
     while True:
         # Find the last "From" to get the exact location of seller information
-        from_found = re.search(begin_keyword, text[tmp:])
-        if from_found and re.match(check_regex, text[tmp+from_found.start():]):
+        from_found = re.search(begin_keyword, text[tmp:], re.IGNORECASE)
+        if from_found and re.match(check_regex, text[tmp+from_found.start():], re.IGNORECASE):
             begin = tmp + from_found.start()
             tmp = tmp + from_found.end()
         else:
@@ -44,26 +46,32 @@ def truncate(text):
     return result
 
 ###################### GET CREATOR ##################
+def is_creator_email_string(email_string):
+    check_regex = r"<.+@.+>"
+    if not re.match(check_regex, email_string):
+        return True
+    else:
+        return False
+    
+
 def get_creator(text):
-    KEY_FIELDS = ['created_by:', 'created by:']
-    email_regexes = [r"[a-z][a-z0-9_\.]{5,32}@[a-z0-9]{2,}(\.[a-z0-9]{2,4}){1,2}", \
-                   r" ,"]
-    
-    
-    begin = 0
-    end = len(text)
-    
-    for key_field in KEY_FIELDS:        
-        found = re.search(key_field, text[begin:end], re.IGNORECASE)
-        if found:
-            # search for the key_field (begin point of result)
-            begin = begin + found.end()
-            for regex in email_regexes:
-                creator_found = re.search(regex, text[begin:])
-                if creator_found:
-                    return text[begin+creator_found.start() : begin+creator_found.end()].strip()
-        
+    email_regexes = [r"[a-z][a-z0-9_\.]{4,}@[a-z0-9]{2,}(\.[a-z0-9]{2,4}){1,2}"]
+#                    r"[A-Za-z0-9&#9290;.&#9290;+_-]+@[A-Za-z0-9&#9290;._-]+&#9290;.[a-zA-Z]*"]
+    for email_regex in email_regexes:
+        begin = 0
+        while True:
+            found = re.search(email_regex, text[begin:], re.IGNORECASE)
+            if found:
+                email = text[begin+found.start() : begin+found.end()]
+                email_string = text[max(0, begin+found.start()-1) : min(len(text), begin+found.end()+1)]
+                if is_creator_email_string(email_string):
+                    return email
+                else:
+                    begin = begin + found.end()
+            else:
+                break
     return ""
+
 
 
 ###################### GET DATE #####################
@@ -75,8 +83,12 @@ def preprocess_and_split_datestring(datestring):
 
 
 def is_eng_date(datestring):
-    weekday_dict = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    return datestring[:3] in weekday_dict
+    month_dict = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    for month in month_dict:
+        if month in datestring:
+            return True
+        
+    return False
 
 
 def is_vie_date(datestring):
@@ -112,7 +124,7 @@ def extract_eng_date(datestring):
             
     if len(day)==1:
         day = '0' + day
-    return day + '/' + month + '/' + year
+    return month + '/' + day + '/' + year
 
 
 def extract_vie_date(datestring):
@@ -122,6 +134,9 @@ def extract_vie_date(datestring):
     substring_found = re.search(r",.+,.+", datestring)
     if substring_found:
         datestring = substring_found.group()
+    else:
+        return ""
+    
     tokens = preprocess_and_split_datestring(datestring)
     
     year = ''
@@ -147,13 +162,15 @@ def extract_vie_date(datestring):
         day = '0' + day
     if len(month)==1:
         month = '0' + month
-    return day + '/' + month + '/' + year
+    return month + '/' + day + '/' + year
 
 
 def extract_date(datestring):
     if is_eng_date(datestring):
+#         print("eng")
         return extract_eng_date(datestring)
     else:
+#         print("vie")
         return extract_vie_date(datestring)
     
 
@@ -255,7 +272,7 @@ def get_vendor(text):
         else:
             return get_vendor_via_email(text, email)
     
-    return ""
+    return result
 
 
 def get_subject(text):

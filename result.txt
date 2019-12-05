@@ -99,3 +99,6 @@
 
 {'created_by': '', 'date': '21/01/2018', 'seller': 'Uber Receipts', 'total': 28000, 'currency': 'VND'}
 {'created_by': '', 'date': '21/01/2018', 'seller': 'Uber Receipts', 'total': 28000, 'currency': 'VND'}
+
+{'created_by': 'nhan3@yopmail.com', 'date': '18/09/2019', 'seller': 'VNTRIP.VN', 'total': 3478000, 'currency': 'VND'}
+{'created_by': 'anhquan6776@gmail.com', 'date': '18/09/2019', 'seller': 'VNTRIP.VN', 'total': 3478000, 'currency': 'VND'}
